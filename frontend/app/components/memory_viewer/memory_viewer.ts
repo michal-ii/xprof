@@ -1,5 +1,5 @@
 import {Component, inject, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
-import {ActivatedRoute, Params} from '@angular/router';
+import {ActivatedRoute, Params, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {Throbber} from 'org_xprof/frontend/app/common/classes/throbber';
 import {MemoryViewerPreprocessResult} from 'org_xprof/frontend/app/common/interfaces/data_table';
@@ -41,6 +41,7 @@ export class MemoryViewer implements OnDestroy {
 
   constructor(
       route: ActivatedRoute,
+      private readonly router: Router,
       private readonly store: Store<{}>,
   ) {
     combineLatest([route.params, route.queryParams])
@@ -112,9 +113,15 @@ export class MemoryViewer implements OnDestroy {
   update(event: NavigationEvent) {
     if (event.moduleName !== this.selectedModule ||
         event.memorySpaceColor !== this.selectedMemorySpaceColor) {
+      if (event.moduleName) {
+        this.router.navigate([], {
+          queryParams: {moduleName: event.moduleName},
+          queryParamsHandling: 'merge',
+        });
+      }
       this.loadModule(
-          event.moduleName!,
-          event.memorySpaceColor!,
+          event.moduleName || '',
+          event.memorySpaceColor || '0',
       );
     }
   }

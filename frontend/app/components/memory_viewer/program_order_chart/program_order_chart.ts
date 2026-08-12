@@ -76,14 +76,19 @@ export class ProgramOrderChart implements OnChanges, OnInit {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['heapSizes'] || changes['unpaddedHeapSizes']) {
+    if (
+        changes['heapSizes'] || changes['unpaddedHeapSizes'] ||
+        changes['hloInstructionNames']) {
       this.drawChart();
-    }
-    if (changes['peakInfo']) {
       this.drawPeakChart();
-    }
-    if (changes['activeInfo']) {
       this.drawActiveChart();
+    } else {
+      if (changes['peakInfo']) {
+        this.drawPeakChart();
+      }
+      if (changes['activeInfo']) {
+        this.drawActiveChart();
+      }
     }
   }
 
@@ -92,6 +97,10 @@ export class ProgramOrderChart implements OnChanges, OnInit {
       if (this.activeChart) {
         this.activeChart.clearChart();
       }
+      this.activeChartDataInfo = {
+        ...this.activeChartDataInfo,
+        data: null,
+      };
       return;
     }
 
@@ -138,24 +147,35 @@ export class ProgramOrderChart implements OnChanges, OnInit {
   }
 
   drawChart() {
-    if (!this.heapSizes.length || !this.unpaddedHeapSizes.length) {
+    if (!this.heapSizes || !this.heapSizes.length) {
       return;
     }
 
     const data = [];
     this.maxOrder = this.heapSizes.length - 1;
     this.maxSize = 0;
+    const hasUnpadded =
+        Boolean(this.unpaddedHeapSizes && this.unpaddedHeapSizes.length > 0);
     for (let i = 0; i < this.heapSizes.length; i++) {
+      const heapSize = this.heapSizes[i] ?? 0;
+      const unpaddedHeapSize =
+          hasUnpadded ? (this.unpaddedHeapSizes[i] ?? 0) : 0;
       this.maxSize = Math.max(
-          this.maxSize, Math.max(this.heapSizes[i], this.unpaddedHeapSizes[i]));
-      const tooltip = `<div>
-        Program Order: ${i}<br>Size: ${this.heapSizes[i].toFixed(1)}<br>
-        Unpadded Size: ${this.unpaddedHeapSizes[i].toFixed(1)}<br>
-        HLO instruction: ${this.hloInstructionNames[i]}
+          this.maxSize, Math.max(heapSize, unpaddedHeapSize));
+      const hloName =
+          (this.hloInstructionNames && this.hloInstructionNames[i]) || '';
+      let tooltip = `<div>
+        Program Order: ${i}<br>Size: ${heapSize.toFixed(1)}<br>`;
+      if (hasUnpadded) {
+        tooltip += `Unpadded Size: ${unpaddedHeapSize.toFixed(1)}<br>`;
+      }
+      tooltip += `HLO instruction: ${hloName}
         </div>`;
-      data.push([i,
-                this.heapSizes[i], tooltip,
-                this.unpaddedHeapSizes[i],tooltip]);
+      if (hasUnpadded) {
+        data.push([i, heapSize, tooltip, unpaddedHeapSize, tooltip]);
+      } else {
+        data.push([i, heapSize, tooltip]);
+      }
     }
     this.maxSize = Math.round(this.maxSize * 1.1);
 
@@ -163,8 +183,10 @@ export class ProgramOrderChart implements OnChanges, OnInit {
     dataTable.addColumn('number', 'Schedule');
     dataTable.addColumn('number', 'Size');
     dataTable.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-    dataTable.addColumn('number', 'Unpadded Size');
-    dataTable.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+    if (hasUnpadded) {
+      dataTable.addColumn('number', 'Unpadded Size');
+      dataTable.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+    }
     dataTable.addRows(data);
 
     const options: google.visualization.LineChartOptions = {
@@ -201,6 +223,10 @@ export class ProgramOrderChart implements OnChanges, OnInit {
 
   drawPeakChart() {
     if (!this.peakInfo) {
+      this.peakChartDataInfo = {
+        ...this.peakChartDataInfo,
+        data: null,
+      };
       return;
     }
 
@@ -259,8 +285,8 @@ export class ProgramOrderChart implements OnChanges, OnInit {
   }
 
   updateCharts() {
+    this.drawChart();
     this.drawActiveChart();
     this.drawPeakChart();
-    this.drawChart();
   }
 }

@@ -180,7 +180,8 @@ export class SideNav implements OnInit, OnDestroy {
     const baseSessionId = params.get('base_session_id') ?? '';
     const label = params.get('label') ?? '';
     const opName = params.get('node_name') ?? params.get('opName') ?? '';
-    const moduleName = params.get('module_name') ?? '';
+    const moduleName =
+      params.get('module_name') ?? params.get('moduleName') ?? '';
     this.navigationParams['firstLoad'] = true;
     if (opName) {
       this.navigationParams['opName'] = opName;
